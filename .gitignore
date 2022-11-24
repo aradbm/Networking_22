@@ -150,3 +150,7 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+*.xml
+Task_2/.idea/Net_Task_2.iml
+Task_2/.idea/.name
+Task_2/.DS_Store
