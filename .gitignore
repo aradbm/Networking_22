@@ -156,3 +156,6 @@ Task_2/.idea/.name
 Task_2/.DS_Store
 Task_2/server.py
 .DS_Store
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/settings.json
