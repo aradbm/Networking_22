@@ -10,11 +10,11 @@ CACHE_CONTROL = 2 ** 16 - 1
 
 
 def calculate(expression: api.Expr, steps: list[str] = []) -> tuple[numbers.Real, list[api.Expression]]:
-    '''    
+    """
     Function which calculates the result of an expression and returns the result and the steps taken to calculate it.
     The function recursively descends into the expression tree and calculates the result of the expression.
     Each expression wraps the result of its subexpressions in parentheses and adds the result to the steps list.
-    '''
+    """
     expr = api.type_fallback(expression)
     const = None
     if isinstance(expr, api.Constant) or isinstance(expr, api.NamedConstant):
@@ -57,9 +57,9 @@ def calculate(expression: api.Expr, steps: list[str] = []) -> tuple[numbers.Real
 
 
 def process_request(request: api.CalculatorHeader) -> api.CalculatorHeader:
-    '''
+    """
     Function which processes a CalculatorRequest and builds a CalculatorResponse.
-    '''
+    """
     result, steps = None, []
     try:
         if request.is_request:
@@ -89,7 +89,7 @@ def server(host: str, port: int) -> None:
 
         # Prepare the server socket
         # Explanation:
-        # In the following code we are setting the socket adress with given port locatio,
+        # In the following code we are setting the socket address with given port location,
         # and then we tell him how many commands the server can listen to at once using threads.
         # * Fill in start (1)
         server_adress = ('', port)
@@ -104,7 +104,8 @@ def server(host: str, port: int) -> None:
             try:
                 # Establish connection with client.
                 # Explanation:
-                # In the following line we are waiting for the client to send a massage thought the socket
+                # In the following line we are waiting for the client to send a massage thought the socket and
+                # once we get a massage we save it.
                 client_socket, address = server_socket.accept()# * Fill in start (2) # * Fill in end (2)
 
                 # Create a new thread to handle the client request
@@ -129,6 +130,8 @@ def client_handler(client_socket: socket.socket, client_address: tuple[str, int]
     with client_socket:  # closes the socket when the block is exited
         print(f"Conection established with {client_addr}")
         while True:
+            # Explanation:
+            # We save the bytes coming through the socket to data, and we limit the enrty to 4096 bytes.
             data = client_socket.recv(4096) # * Fill in start (3) # * Fill in end (3)
             if not data:
                 break

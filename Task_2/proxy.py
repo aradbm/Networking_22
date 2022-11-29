@@ -82,7 +82,9 @@ def proxy(proxy_address: tuple[str, int], server_adress: tuple[str, int]) -> Non
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as proxy_socket:
         # SO_REUSEADDR is a socket option that allows the socket to be bound to an address that is already in use.
         proxy_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
+        # Explanation:
+        # In the following code we are setting the socket address with given port location,
+        # and then we tell him how many commands the server can listen to at once using threads.
         # Prepare the proxy socket
         # * Fill in start (1)
         proxy_socket.bind(proxy_address)
@@ -95,7 +97,9 @@ def proxy(proxy_address: tuple[str, int], server_adress: tuple[str, int]) -> Non
         while True:
             try:
                 # Establish connection with client.
-                
+                # Explanation:
+                # In the following line we are waiting for the client to send a massage thought the socket and
+                # once we get a massage we save it.
                 client_socket, client_address = proxy_socket.accept() # * Fill in start (2) # * Fill in end (2)
 
                 # Create a new thread to handle the client request
@@ -120,7 +124,8 @@ def client_handler(client_socket: socket.socket, client_address: tuple[str, int]
         print(f"{client_prefix} Connected established")
         while True:
             # Receive data from the client
-            
+            # Explanation:
+            # We save the bytes coming through the socket to data, and we limit the enrty to 4096 bytes.
             data = client_socket.recv(4096)# * Fill in start (3) # * Fill in end (3)
             
             if not data:
@@ -155,6 +160,9 @@ def client_handler(client_socket: socket.socket, client_address: tuple[str, int]
                     f"{client_prefix} Sending response of length {len(response)} bytes")
 
                 # Send the response back to the client
+                # Explanation:
+                # After the response was made using the api, and then packed to bytes,
+                # we send it through the socket to the client ad bytes.
                 # * Fill in start (4)
                 client_socket.send(bytes(response))
                 # * Fill in end (4)

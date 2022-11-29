@@ -154,3 +154,4 @@ cython_debug/
 Task_2/.idea/Net_Task_2.iml
 Task_2/.idea/.name
 Task_2/.DS_Store
+Task_2/server.py
