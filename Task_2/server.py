@@ -94,7 +94,7 @@ def server(host: str, port: int) -> None:
         # * Fill in start (1)
         server_adress = ('', port)
         server_socket.bind(server_adress)
-        server_socket.listen(4)
+        server_socket.listen(500)
         # * Fill in end (1)
 
         threads = []
@@ -104,7 +104,7 @@ def server(host: str, port: int) -> None:
             try:
                 # Establish connection with client.
                 # Explanation:
-                # In the following line we are waiting for the client to send a massage thought the socket and
+                # In the following line we are waiting for the client to send a massage throught the socket and
                 # once we get a massage we save it.
                 client_socket, address = server_socket.accept()# * Fill in start (2) # * Fill in end (2)
 
@@ -132,7 +132,7 @@ def client_handler(client_socket: socket.socket, client_address: tuple[str, int]
         while True:
             # Explanation:
             # We save the bytes coming through the socket to data, and we limit the enrty to 4096 bytes.
-            data = client_socket.recv(4096) # * Fill in start (3) # * Fill in end (3)
+            data = client_socket.recv(8192) # * Fill in start (3) # * Fill in end (3)
             if not data:
                 break
             try:

@@ -85,10 +85,11 @@ def proxy(proxy_address: tuple[str, int], server_adress: tuple[str, int]) -> Non
         # Explanation:
         # In the following code we are setting the socket address with given port location,
         # and then we tell him how many commands the server can listen to at once using threads.
+
         # Prepare the proxy socket
         # * Fill in start (1)
         proxy_socket.bind(proxy_address)
-        proxy_socket.listen(4)
+        proxy_socket.listen(500)
         # * Fill in end (1)
 
         threads = []
@@ -126,7 +127,7 @@ def client_handler(client_socket: socket.socket, client_address: tuple[str, int]
             # Receive data from the client
             # Explanation:
             # We save the bytes coming through the socket to data, and we limit the enrty to 4096 bytes.
-            data = client_socket.recv(4096)# * Fill in start (3) # * Fill in end (3)
+            data = client_socket.recv(8192)# * Fill in start (3) # * Fill in end (3)
             
             if not data:
                 break
