@@ -10,14 +10,14 @@
 #include <netinet/tcp.h>
 #include <time.h>
 
-#define SERVER_PORT 5060
+#define SERVER_PORT 9995
 #define SERVER_IP_ADDRESS "127.0.0.1"
-#define BUFFER_SIZE 65536
+#define BUFFER_SIZE 40000
 
 int main()
 {
-    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // 1
-    if (sock == -1)
+    int senderSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // 1
+    if (senderSocket == -1)
     {
         printf("Could not create socket : %d", errno);
         return -1;
@@ -28,7 +28,6 @@ int main()
     //
     struct sockaddr_in serverAddress;
     memset(&serverAddress, 0, sizeof(serverAddress));
-
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(SERVER_PORT);                                             // (5001 = 0x89 0x13) little endian => (0x13 0x89) network endian (big endian)
     int rval = inet_pton(AF_INET, (const char *)SERVER_IP_ADDRESS, &serverAddress.sin_addr); // convert IPv4 and IPv6 addresses from text to binary form
@@ -40,12 +39,12 @@ int main()
     } // 2
 
     // Make a connection to the server with socket SendingSocket.
-    int connectResult = connect(sock, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
+    int connectResult = connect(senderSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
     if (connectResult == -1)
     {
         printf("connect() failed with error code : %d", errno);
         // cleanup the socket;
-        close(sock);
+        close(senderSocket);
         return -1;
     } // 3
     printf("connected to server\n");
@@ -57,32 +56,32 @@ int main()
     while (1)
     {
         // Sends first half to server
-        // reads text until newline is encountered
         file = fopen(filename, "r");
-        if(!file){
+        if (!file)
+        {
             printf("ERROR! file opening has failed!\n");
         }
-        char data[BUFFER_SIZE];
-        while ((fread(data, 1, sizeof(data), file)) > 0)
+        char data[BUFFER_SIZE] = {0};
+        while ((fread(data, sizeof(char), sizeof data, file)) > 0)
         {
-            if (send(sock, data, sizeof(data), 0) == -1)
+            if ((send(senderSocket, data, sizeof(data), 0)) == -1)
             {
-                perror("ERROR! Sending has failed!\n");
+                printf("ERROR! Sending has failed!\n");
                 exit(1);
             }
         }
         if (ferror(file))
         {
-            perror("ERROR! file opening has failed!");
-            close(sock);
+            printf("ERROR! file opening has failed!\n");
+            close(senderSocket);
             return -1;
         }
-        fclose(file);
         printf("first half was successfully sent.\n");
-
+        fclose(file);
         // Receive authentication from server
-        char bufferReply[BUFFER_SIZE] = {'\0'};
-        int bytesReceived = recv(sock, bufferReply, BUFFER_SIZE, 0);
+        char bufferReply[1024] = {'\0'};
+        int bytesReceived = recv(senderSocket, bufferReply, 1024, 0);
+        printf("Got here!!\n");
         if (bytesReceived == -1)
         {
             printf("recv() failed with error code : %d", errno);
@@ -96,48 +95,37 @@ int main()
             printf("checking authentication from server: %d bytes.\n", bytesReceived);
             if (strncmp(bufferReply, "1234", 4) == 0)
             {
-                printf("Correct authentication!\n");
+                printf("Correct authentication! %s\n",bufferReply);
             }
             else
             {
-                printf("Incorrect authentication!\n");
+                printf("Incorrect authentication! %s\n", bufferReply);
                 goto exit_loop;
             }
         }
         //  Sends second half to server:
-        file = fopen(filename, "r");
-        if(!file){
-            printf("ERROR! file opening has failed!\n");
-        }
-        char data[BUFFER_SIZE];
-        while ((fread(data, 1, sizeof(data), file)) > 0)
+        bzero(data, BUFFER_SIZE);
+        int sendResult = send(senderSocket, data, strlen(data) + 1, 0);
+        if (sendResult == -1)
         {
-            if (send(sock, data, sizeof(data), 0) == -1)
-            {
-                perror("ERROR! Sending has failed!\n");
-                exit(1);
-            }
-        }
-        if (ferror(file))
-        {
-            perror("ERROR! file opening has failed!");
-            close(sock);
+            printf("send() failed with error code : %d\n", errno);
+            // cleanup the socket;
+            close(senderSocket);
             return -1;
         }
-        fclose(file);
-        printf("first half was successfully sent.\n");
-
+        printf("Sent %d bytes to server : %s\n", sendResult, data);
+        bzero(data, BUFFER_SIZE);
         // writing to server if to end or not:
-        printf("Enter message to send to server (write exit to exit, anything else to continue): \n");
+        printf("Enter message to send to server (write ex to exit, anything else to continue): \n");
         char buffer[BUFFER_SIZE] = {'\0'};
         fgets(buffer, BUFFER_SIZE, stdin);
         buffer[strlen(buffer) - 1] = '\0'; // remove the trailing newline
-        if (strcmp(buffer, "exit") == 0)
+        if (strcmp(buffer, "ex") == 0)
         {
             goto exit_loop;
         }
     }
 exit_loop:;
-    close(sock);
+    close(senderSocket);
     return 0;
 }
