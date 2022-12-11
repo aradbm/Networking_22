@@ -1,12 +1,12 @@
 # Makefile for TCP project
 
-all: receiver sender
+all: sender reciever
 
-receiver: receiver.c
-	gcc -o receiver receiver.c
+reciever: reciever.c
+	gcc -o reciever reciever.c
 
 sender: sender.c
 	gcc -o sender sender.c
 
 clean:
-	rm -f *.o receiver sender
+	rm -f *.o reciever sender
