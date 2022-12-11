@@ -50,73 +50,35 @@ int main()
     } // 3
     printf("connected to server\n");
 
-    // reads text until newline is encountered
     FILE *file;
-    file = fopen("mobydick2times.txt", "r");
-    char ch;
-    int i = 0, j = 0, len = 0;
-    while (!feof(file))
-    {
-        ch = fgetc(file);
-        len++;
-    }
-    int parts = len / 1024;
-    fclose(file);
-    // 65536
-    FILE *f;
-    f = fopen("mobydick2times.txt", "r");
-    printf("parts is: %d\n", parts);
-    char half[parts / 2][1024];
-    while (!feof(f) && i < parts / 2)
-    {
-        while (j < 1023)
-        {
-            half[i][j] = fgetc(f);
-            // putchar(half[i][j]);
-            j++;
-        }
-        half[i][j] = 0;
+    char *filename = "mobydick2times.txt";
 
-        j = 0;
-        i++;
-    }
-    printf("1count is: %d\n", i);
-    while (!feof(f) && i < parts / 2)
-    {
-        while (j < 1023)
-        {
-            half[i][j] = fgetc(f);
-
-            j++;
-        }
-        half[i][j] = 0;
-        j = 0;
-        i++;
-    }
-    fclose(f);
     ////////////////////////////////////
     while (1)
     {
-        // We got:  half[0] = first half, half[1] = second half
         // Sends first half to server
-        messageLen = strlen(half[0]) + 1;
-        bytesSent = send(sock, half[0], messageLen, 0); // 4
-        if (bytesSent == -1)
-        {
-            printf("send() failed with error code : %d", errno);
+        // reads text until newline is encountered
+        file = fopen(filename, "r");
+        if(!file){
+            printf("ERROR! file opening has failed!\n");
         }
-        else if (bytesSent == 0)
+        char data[BUFFER_SIZE];
+        while ((fread(data, 1, sizeof(data), file)) > 0)
         {
-            printf("peer has closed the TCP connection prior to send().\n");
+            if (send(sock, data, sizeof(data), 0) == -1)
+            {
+                perror("ERROR! Sending has failed!\n");
+                exit(1);
+            }
         }
-        else if (bytesSent < messageLen)
+        if (ferror(file))
         {
-            printf("sent only %d bytes from the required %d.\n", messageLen, bytesSent);
+            perror("ERROR! file opening has failed!");
+            close(sock);
+            return -1;
         }
-        else
-        {
-            printf("first half was successfully sent.\n");
-        }
+        fclose(file);
+        printf("first half was successfully sent.\n");
 
         // Receive authentication from server
         char bufferReply[BUFFER_SIZE] = {'\0'};
@@ -143,24 +105,28 @@ int main()
             }
         }
         //  Sends second half to server:
-        messageLen = strlen(half[1]) + 1;
-        bytesSent = send(sock, half[1], messageLen, 0); // 4
-        if (bytesSent == -1)
-        {
-            printf("send() failed with error code : %d\n", errno);
+        file = fopen(filename, "r");
+        if(!file){
+            printf("ERROR! file opening has failed!\n");
         }
-        else if (bytesSent == 0)
+        char data[BUFFER_SIZE];
+        while ((fread(data, 1, sizeof(data), file)) > 0)
         {
-            printf("peer has closed the TCP connection prior to send().\n");
+            if (send(sock, data, sizeof(data), 0) == -1)
+            {
+                perror("ERROR! Sending has failed!\n");
+                exit(1);
+            }
         }
-        else if (bytesSent < messageLen)
+        if (ferror(file))
         {
-            printf("sent only %d bytes from the required %d.\n", messageLen, bytesSent);
+            perror("ERROR! file opening has failed!");
+            close(sock);
+            return -1;
         }
-        else
-        {
-            printf("second half was successfully sent.\n");
-        }
+        fclose(file);
+        printf("first half was successfully sent.\n");
+
         // writing to server if to end or not:
         printf("Enter message to send to server (write exit to exit, anything else to continue): \n");
         char buffer[BUFFER_SIZE] = {'\0'};
