@@ -12,15 +12,15 @@
 #include <signal.h>
 #include <errno.h>
 
-#define SERVER_PORT 9990  // The port that the server listens
-#define BUFFER_SIZE 10000 // how many bytes to recieve each time
+#define SERVER_PORT 9988 // The port that the server listens
+#define BUFFER_SIZE 1024 // how many bytes to recieve each time
 
 int main()
 {
     // Open the listening (server) socket
-    int listeningSocket = -1;
-    listeningSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // 0 means default protocol for stream sockets (Equivalently, IPPROTO_TCP)
-    if (listeningSocket == -1)
+    int serverSocket = -1;
+    serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // 0 means default protocol for stream sockets (Equivalently, IPPROTO_TCP)
+    if (serverSocket == -1)
     {
         printf("Could not create listening socket : %d\n", errno);
         return 1;
@@ -28,7 +28,7 @@ int main()
     // Reuse the address if the server socket on was closed
     // and remains for 45 seconds in TIME-WAIT state till the final removal.
     int enableReuse = 1;
-    int ret = setsockopt(listeningSocket, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
+    int ret = setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
     if (ret < 0)
     {
         printf("setsockopt() failed with error code : %d\n", errno);
@@ -46,24 +46,24 @@ int main()
     serverAddress.sin_port = htons(SERVER_PORT); // network order (makes byte order consistent)
 
     // Bind the socket to the port with any IP at this port
-    int bindResult = bind(listeningSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
+    int bindResult = bind(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
     if (bindResult == -1)
     {
         printf("Bind failed with error code : %d\n", errno);
         // close the socket
-        close(listeningSocket);
+        close(serverSocket);
         return -1;
     }
     printf("Bind() success\n");
 
     // Make the socket listening;
     // 500 is a Maximum size of queue connection requests; number of concurrent connections.
-    int listenResult = listen(listeningSocket, 500);
+    int listenResult = listen(serverSocket, 500);
     if (listenResult == -1)
     {
         printf("listen() failed with error code : %d\n", errno);
         // close the socket
-        close(listeningSocket);
+        close(serverSocket);
         return -1;
     }
 
@@ -77,18 +77,17 @@ int main()
         printf("waiting..\n");
         memset(&clientAddress, 0, sizeof(clientAddress));
         clientAddressLen = sizeof(clientAddress);
-        int clientSocket = accept(listeningSocket, (struct sockaddr *)&clientAddress, &clientAddressLen);
+        int clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddress, &clientAddressLen);
         if (clientSocket == -1)
         {
             printf("listen failed with error code : %d", errno);
             // close the sockets
-            close(listeningSocket);
+            close(serverSocket);
             return -1;
         }
         printf("A new client connection accepted\n");
         int amountReceived = 0;
         int continueRecv = 0;
-        // char *extMSG = "";
         while (1)
         {
             //// Receive from client first half of file
@@ -96,13 +95,13 @@ int main()
             char ccBuffer[256];
             strcpy(ccBuffer, "cubic");
             socklen_t socklen = strlen(ccBuffer);
-            if (setsockopt(listeningSocket, IPPROTO_TCP, TCP_CONGESTION, ccBuffer, socklen) != 0)
+            if (setsockopt(serverSocket, IPPROTO_TCP, TCP_CONGESTION, ccBuffer, socklen) != 0)
             {
                 printf("ERROR! socket setting failed!\n");
                 return -1;
             }
             socklen = sizeof(ccBuffer);
-            if (getsockopt(listeningSocket, IPPROTO_TCP, TCP_CONGESTION, ccBuffer, &socklen) != 0)
+            if (getsockopt(serverSocket, IPPROTO_TCP, TCP_CONGESTION, ccBuffer, &socklen) != 0)
             {
                 printf("ERROR! socket getting failed!\n");
                 return -1;
@@ -110,20 +109,21 @@ int main()
             printf("Changed Congestion Control to Cubic\n");
             ////////////////////here !!!!!
             // receiving the data
-            memset(&buffer, 0, sizeof(buffer));
+            bzero(buffer, BUFFER_SIZE);
             while ((continueRecv = recv(clientSocket, buffer, sizeof(buffer), 0)) > 0)
             {
-                // if (continueRecv < 0)
-                // {
-                //     printf("recv failed with error code. \n");
-                //     // close the sockets
-                //     close(listeningSocket);
-                //     close(clientSocket);
-                //     return -1;
-                // }
+                if (continueRecv < 0)
+                {
+                    printf("recv failed with error code. \n");
+                    // close the sockets
+                    close(serverSocket);
+                    close(clientSocket);
+                    return -1;
+                }
                 amountReceived += continueRecv;
-                printf("continueRecv: %d\n", continueRecv);
-                // if (continueRecv < 40000)
+                // printf("continueRecv: %s\n", buffer);
+                puts(buffer);
+                // if (continueRecv < 400)
                 //     goto asd;
             }
             // asd:;
@@ -133,13 +133,13 @@ int main()
             printf("Changed Congestion Control to Reno\n");
             strcpy(ccBuffer, "reno");
             socklen = strlen(ccBuffer);
-            if (setsockopt(listeningSocket, IPPROTO_TCP, TCP_CONGESTION, ccBuffer, socklen) != 0)
+            if (setsockopt(serverSocket, IPPROTO_TCP, TCP_CONGESTION, ccBuffer, socklen) != 0)
             {
                 perror("ERROR! socket setting failed!");
                 return -1;
             }
             socklen = sizeof(ccBuffer);
-            if (getsockopt(listeningSocket, IPPROTO_TCP, TCP_CONGESTION, ccBuffer, &socklen) != 0)
+            if (getsockopt(serverSocket, IPPROTO_TCP, TCP_CONGESTION, ccBuffer, &socklen) != 0)
             {
                 perror("ERROR! socket getting failed!");
                 return -1;
@@ -154,7 +154,7 @@ int main()
             if (bytesSent == -1)
             {
                 printf("send() failed with error code : %d", errno);
-                close(listeningSocket);
+                close(serverSocket);
                 close(clientSocket);
                 return -1;
             }
@@ -170,21 +170,21 @@ int main()
             {
                 printf("Authentication message was successfully sent.\n");
             }
-            
+
             //// Receive from client second half of file:
             amountReceived = 0;
             continueRecv = 0;
             bzero(buffer, BUFFER_SIZE);
             while ((continueRecv = recv(clientSocket, buffer, sizeof(buffer), 0)) > 0)
             {
-                // if (continueRecv < 0)
-                // {
-                //     printf("recv failed with error code : %d\n", errno);
-                //     // close the sockets
-                //     close(listeningSocket);
-                //     close(clientSocket);
-                //     return -1;
-                // }
+                if (continueRecv < 0)
+                {
+                    printf("recv failed with error code : %d\n", errno);
+                    // close the sockets
+                    close(serverSocket);
+                    close(clientSocket);
+                    return -1;
+                }
                 amountReceived += continueRecv;
                 // if (continueRecv < 40000)
                 //     goto qwe;
@@ -195,8 +195,6 @@ int main()
             // receiving if i want to exit:
             memset(buffer, 0, BUFFER_SIZE);
             amountReceived = recv(clientSocket, &buffer, BUFFER_SIZE, 0);
-            /////////////////////here is the problem:
-            /// receiving 40000 bits and not waiting for cleient
             printf("Received msg of %d bytes from client: XXXXXXX\n", amountReceived); // buffer for msg
             // check if got the "exit" command from client, if yes, then exit and close the client socket
             if (strncmp(buffer, "ex", 4) == 0)
@@ -205,7 +203,7 @@ int main()
                 goto rew;
             }
         }
-        rew:;
+    rew:;
         close(clientSocket);
     }
     return 0;
