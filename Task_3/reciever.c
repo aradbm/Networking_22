@@ -12,8 +12,8 @@
 #include <signal.h>
 #include <errno.h>
 
-#define SERVER_PORT 9995  // The port that the server listens
-#define BUFFER_SIZE 40000 // how many bytes to recieve each time
+#define SERVER_PORT 9990  // The port that the server listens
+#define BUFFER_SIZE 10000 // how many bytes to recieve each time
 
 int main()
 {
@@ -111,24 +111,40 @@ int main()
             ////////////////////here !!!!!
             // receiving the data
             memset(&buffer, 0, sizeof(buffer));
-            while ((continueRecv = recv(clientSocket, &buffer, sizeof(buffer), 0)) > 0)
+            while ((continueRecv = recv(clientSocket, buffer, sizeof(buffer), 0)) > 0)
             {
-                if (continueRecv < 0)
-                {
-                    printf("recv failed with error code. \n");
-                    // close the sockets
-                    close(listeningSocket);
-                    close(clientSocket);
-                    return -1;
-                }
+                // if (continueRecv < 0)
+                // {
+                //     printf("recv failed with error code. \n");
+                //     // close the sockets
+                //     close(listeningSocket);
+                //     close(clientSocket);
+                //     return -1;
+                // }
                 amountReceived += continueRecv;
-                // printf("continueRecv: %d\n", continueRecv);
-                if (continueRecv < 40000)
-                    goto asd;
+                printf("continueRecv: %d\n", continueRecv);
+                // if (continueRecv < 40000)
+                //     goto asd;
             }
-            asd:;
+            // asd:;
             printf("Received: %d bytes\n", amountReceived);
             printf("got first half.\n");
+            // Changing to reno algorithm
+            printf("Changed Congestion Control to Reno\n");
+            strcpy(ccBuffer, "reno");
+            socklen = strlen(ccBuffer);
+            if (setsockopt(listeningSocket, IPPROTO_TCP, TCP_CONGESTION, ccBuffer, socklen) != 0)
+            {
+                perror("ERROR! socket setting failed!");
+                return -1;
+            }
+            socklen = sizeof(ccBuffer);
+            if (getsockopt(listeningSocket, IPPROTO_TCP, TCP_CONGESTION, ccBuffer, &socklen) != 0)
+            {
+                perror("ERROR! socket getting failed!");
+                return -1;
+            }
+
             //// send authentication to client:
             // calculated before xor between IDs: 206391054 XOR 207083353 = 1234
             char *message = "1234";
@@ -154,41 +170,27 @@ int main()
             {
                 printf("Authentication message was successfully sent.\n");
             }
-            // Changing to reno algorithm
-            printf("Changed Congestion Control to Reno\n");
-            strcpy(ccBuffer, "reno");
-            socklen = strlen(ccBuffer);
-            if (setsockopt(listeningSocket, IPPROTO_TCP, TCP_CONGESTION, ccBuffer, socklen) != 0)
-            {
-                perror("ERROR! socket setting failed!");
-                return -1;
-            }
-            socklen = sizeof(ccBuffer);
-            if (getsockopt(listeningSocket, IPPROTO_TCP, TCP_CONGESTION, ccBuffer, &socklen) != 0)
-            {
-                perror("ERROR! socket getting failed!");
-                return -1;
-            }
+            
             //// Receive from client second half of file:
             amountReceived = 0;
             continueRecv = 0;
             bzero(buffer, BUFFER_SIZE);
-            while ((continueRecv = recv(clientSocket, &buffer, sizeof(buffer), 0)) > 0)
+            while ((continueRecv = recv(clientSocket, buffer, sizeof(buffer), 0)) > 0)
             {
-                if (continueRecv < 0)
-                {
-                    printf("recv failed with error code : %d\n", errno);
-                    // close the sockets
-                    close(listeningSocket);
-                    close(clientSocket);
-                    return -1;
-                }
+                // if (continueRecv < 0)
+                // {
+                //     printf("recv failed with error code : %d\n", errno);
+                //     // close the sockets
+                //     close(listeningSocket);
+                //     close(clientSocket);
+                //     return -1;
+                // }
                 amountReceived += continueRecv;
-                if (continueRecv < 40000)
-                    goto qwe;
+                // if (continueRecv < 40000)
+                //     goto qwe;
             }
-            qwe:;
-            printf("Received: %d bytes\n", amountReceived);
+            // qwe:;
+            printf("Received: %d bytes.\n", amountReceived);
             printf("got second half.\n");
             // receiving if i want to exit:
             memset(buffer, 0, BUFFER_SIZE);
@@ -206,6 +208,5 @@ int main()
         rew:;
         close(clientSocket);
     }
-    close(listeningSocket);
     return 0;
 }

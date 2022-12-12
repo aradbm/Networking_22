@@ -10,9 +10,9 @@
 #include <netinet/tcp.h>
 #include <time.h>
 
-#define SERVER_PORT 9995
+#define SERVER_PORT 9990
 #define SERVER_IP_ADDRESS "127.0.0.1"
-#define BUFFER_SIZE 40000
+#define BUFFER_SIZE 10000
 
 int main()
 {
@@ -22,7 +22,7 @@ int main()
         printf("Could not create socket : %d", errno);
         return -1;
     }
-    int messageLen, bytesSent;
+    int amountSent, bytesSent;
     // "sockaddr_in" is the "derived" from sockaddr structure
     // used for IPv4 communication. For IPv6, use sockaddr_in6
     //
@@ -49,37 +49,46 @@ int main()
     } // 3
     printf("connected to server\n");
 
-    FILE *file;
-    char *filename = "mobydick2times.txt";
-
     ////////////////////////////////////
     while (1)
     {
+        
         // Sends first half to server
-        file = fopen(filename, "r");
-        if (!file)
+        FILE *file1;
+        file1 = fopen("mobydick2times.txt", "r");
+        if (!file1)
         {
             printf("ERROR! file opening has failed!\n");
         }
         char data[BUFFER_SIZE] = {0};
-        while ((fread(data, sizeof(char), sizeof data, file)) > 0)
+        int b=0;
+        while ((b= fread(data, sizeof(char), sizeof data, file1)) > 0)
         {
-            if ((send(senderSocket, data, sizeof(data), 0)) == -1)
-            {
-                printf("ERROR! Sending has failed!\n");
-                exit(1);
-            }
+            bytesSent = send(senderSocket, data, b, 0);
+	
+		     if (-1 == bytesSent)
+		     {
+				printf("Error in sending file: %d", errno);
+		     }
+		     else if (0 == bytesSent)
+		     {
+				printf("peer has closed the TCP connection prior to send().\n");
+		     }
+		     else if (b > bytesSent)
+		     {
+				printf("sent only %d bytes from the required %d.\n", bytesSent, b);
+		     }
+		     else 
+		     {
+				printf("Message was successfully sent. Send %d bytes: \n", bytesSent);
+		     }
+		     amountSent+=bytesSent;
+		     
         }
-        if (ferror(file))
-        {
-            printf("ERROR! file opening has failed!\n");
-            close(senderSocket);
-            return -1;
-        }
-        printf("first half was successfully sent.\n");
-        fclose(file);
+        fclose(file1);
+        printf("first half was successfully sent total of: %d.\n", amountSent);
         // Receive authentication from server
-        char bufferReply[1024] = {'\0'};
+        char bufferReply[1024] = {0};
         int bytesReceived = recv(senderSocket, bufferReply, 1024, 0);
         printf("Got here!!\n");
         if (bytesReceived == -1)
@@ -95,7 +104,7 @@ int main()
             printf("checking authentication from server: %d bytes.\n", bytesReceived);
             if (strncmp(bufferReply, "1234", 4) == 0)
             {
-                printf("Correct authentication! %s\n",bufferReply);
+                printf("Correct authentication! %s\n", bufferReply);
             }
             else
             {
@@ -105,27 +114,51 @@ int main()
         }
         //  Sends second half to server:
         bzero(data, BUFFER_SIZE);
-        int sendResult = send(senderSocket, data, strlen(data) + 1, 0);
-        if (sendResult == -1)
+        b=0;
+        while ((b= fread(data, sizeof(char), sizeof data, file1)) > 0)
         {
-            printf("send() failed with error code : %d\n", errno);
-            // cleanup the socket;
-            close(senderSocket);
-            return -1;
+            bytesSent = send(senderSocket, data, b, 0);
+	
+		     if (-1 == bytesSent)
+		     {
+				printf("Error in sending file: %d", errno);
+		     }
+		     else if (0 == bytesSent)
+		     {
+				printf("peer has closed the TCP connection prior to send().\n");
+		     }
+		     else if (b > bytesSent)
+		     {
+				printf("sent only %d bytes from the required %d.\n", bytesSent, b);
+		     }
+		     else 
+		     {
+				printf("Message was successfully sent. Sent %d bytes: \n", bytesSent);
+		     }
+		     amountSent+=bytesSent;
+		     
         }
-        printf("Sent %d bytes to server : %s\n", sendResult, data);
+        // int sendResult = send(senderSocket, data, strlen(data) + 1, 0);
+        // if (sendResult == -1)
+        // {
+        //     printf("send() failed with error code : %d\n", errno);
+        //     // cleanup the socket;
+        //     close(senderSocket);
+        //     return -1;
+        // }
+        printf("Sent %d bytes to server\n", amountSent);
         bzero(data, BUFFER_SIZE);
         // writing to server if to end or not:
         printf("Enter message to send to server (write ex to exit, anything else to continue): \n");
-        char buffer[BUFFER_SIZE] = {'\0'};
-        fgets(buffer, BUFFER_SIZE, stdin);
-        buffer[strlen(buffer) - 1] = '\0'; // remove the trailing newline
-        if (strcmp(buffer, "ex") == 0)
+        fgets(data, BUFFER_SIZE, stdin);
+        data[strlen(data) - 1] = '\0'; // remove the trailing newline
+        if (strcmp(data, "ex") == 0)
         {
             goto exit_loop;
         }
+        bzero(data, BUFFER_SIZE);
     }
-exit_loop:;
+    exit_loop:;
     close(senderSocket);
     return 0;
 }
