@@ -33,10 +33,8 @@ int main()
         printf("Could not create listening socket : %d", errno);
         return 1;
     }
-
     // Reuse the address if the server socket on was closed
     // and remains for 45 seconds in TIME-WAIT state till the final removal.
-    //
     int enableReuse = 1;
     int ret = setsockopt(listeningSocket, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
     if (ret < 0)
@@ -44,13 +42,10 @@ int main()
         printf("setsockopt() failed with error code : %d \n", errno);
         return 1;
     }
-
     // "sockaddr_in" is the "derived" from sockaddr structure
     // used for IPv4 communication. For IPv6, use sockaddr_in6
-    //
     struct sockaddr_in serverAddress;
     memset(&serverAddress, 0, sizeof(serverAddress));
-
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;  // any IP at this port (Address to accept any incoming messages)
     serverAddress.sin_port = htons(SERVER_PORT); // network order (makes byte order consistent)
@@ -64,9 +59,7 @@ int main()
         close(listeningSocket);
         return -1;
     }
-
     printf("Bind() success\n");
-
     // Make the socket listening; actually mother of all client sockets.
     // 500 is a Maximum size of queue connection requests
     // number of concurrent connections
@@ -78,7 +71,6 @@ int main()
         close(listeningSocket);
         return -1;
     }
-
     // Accept incoming connections
     struct sockaddr_in clientAddress; //
     socklen_t clientAddressLen = sizeof(clientAddress);
@@ -96,7 +88,7 @@ int main()
             return -1;
         }
         printf("A new client connection accepted\n");
-        // time calculations preperation:
+        // Time calculations preperation:
         char time_text[100000] = "";
         long totClientTime_1 = 0;
         long totClientTime_2 = 0;
@@ -105,7 +97,7 @@ int main()
     restart:
         printf("This is round number %d to send file: \n", countFileSent);
 
-        // code got changing CC algorithm
+        // Changing to cubic CC algorithm
         char ccBuffer[256];
         printf("Changed Congestion Control to Cubic\n");
         strcpy(ccBuffer, "cubic");
@@ -121,32 +113,29 @@ int main()
             perror("ERROR! socket getting failed!");
             return -1;
         }
-        // time capturing handling
-        // printf("got here \n");
+        // Time capturing handling
         char buffer[BUFFER_SIZE];
         bzero(buffer, BUFFER_SIZE);
         int bytesReceived = 0, amountRec = 0;
         gettimeofday(&start, NULL);
         while ((bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0)) > 0)
         {
-            // printf("Received %d bytes from client: %s\n", bytesReceived, buffer);
             amountRec += bytesReceived;
-            printf("%d\n", amountRec);
+            // printf("%d\n", amountRec);
             if (amountRec >= FILE_SIZE / 2)
                 break;
             bzero(buffer, BUFFER_SIZE);
         }
         gettimeofday(&end, NULL);
         printf("recieved in total for first half: %d bytes \n", amountRec);
-        tot = ((end.tv_sec * 1000000 + end.tv_usec) -
-               (start.tv_sec * 1000000 + start.tv_usec));
+        tot = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec));
         totClientTime_1 += tot;
         char temp_str[50] = "time taken in micro seconds for first half: ";
         addLongToString(temp_str, tot);
         strcat(temp_str, "\n");
         strcat(time_text, temp_str);
         int oldamount = amountRec;
-        // Reply to client
+        // Send authentication to client
         char *message = "1740887"; // = 207083353 XOR 206391054
         int messageLen = strlen(message) + 1;
         int bytesSent = send(clientSocket, message, messageLen, 0);
@@ -170,7 +159,6 @@ int main()
             printf("sent authuntication to client.\n");
         }
         // Changing to reno algorithm
-        printf("Changed Congestion Control to Reno\n");
         strcpy(ccBuffer, "reno");
         socklen = strlen(ccBuffer);
         if (setsockopt(listeningSocket, IPPROTO_TCP, TCP_CONGESTION, ccBuffer, socklen) != 0)
@@ -184,14 +172,15 @@ int main()
             perror("ERROR! socket getting failed!");
             return -1;
         }
-        // waiting to recieve second part.
+        printf("Changed Congestion Control to Reno\n");
+        // Recieving 2nd part of file
         bzero(buffer, BUFFER_SIZE);
         amountRec = 0;
         gettimeofday(&start, NULL);
         while ((bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0)) > 0)
         {
             amountRec += bytesReceived;
-            printf("%d\n", amountRec);
+            // printf("%d\n", amountRec);
             if (amountRec >= FILE_SIZE / 2)
                 break;
             bzero(buffer, BUFFER_SIZE);
@@ -223,7 +212,7 @@ int main()
             else
             {
                 countFileSent++;
-                puts("*************************continue***************************");
+                puts("*************************continue***************************\n");
                 goto restart;
             }
         }
