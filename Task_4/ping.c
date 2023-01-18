@@ -26,24 +26,6 @@
 // Checksum algo
 unsigned short calculate_checksum(unsigned short *paddress, int len);
 
-// 1. Change SOURCE_IP and dst_ip to the relevant
-//     for your computer
-// 2. Compile it using MSVC compiler or g++
-// 3. Run it from the account with administrative permissions,
-//    since opening of a raw-socket requires elevated preveledges.
-//
-//    On Windows, right click the exe and select "Run as administrator"
-//    On Linux, run it as a root or with sudo.
-//
-// 4. For debugging and development, run MS Visual Studio (MSVS) as admin by
-//    right-clicking at the icon of MSVS and selecting from the right-click
-//    menu "Run as administrator"
-//
-//  Note. You can place another IP-source address that does not belong to your
-//  computer (IP-spoofing), i.e. just another IP from your subnet, and the ICMP
-//  still be sent, but do not expect to see ICMP_ECHO_REPLY in most such cases
-//  since anti-spoofing is wide-spread.
-
 #define SOURCE_IP "10.0.2.15"
 // i.e the gateway or ping to google.com for their ip-address
 
