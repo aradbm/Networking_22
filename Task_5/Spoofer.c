@@ -76,7 +76,7 @@ void send_raw_ip_packet(struct ipheader *ip)
   // Step 3: Provide needed information about destination.
   dest_info.sin_family = AF_INET;
   dest_info.sin_addr = ip->iph_destip;
-
+  // ip->iph_len = 0; // <--------------------for question 1------------------
   // Step 4: Send the packet out.
   sendto(sock, ip, ntohs(ip->iph_len), 0,
          (struct sockaddr *)&dest_info, sizeof(dest_info));
@@ -129,7 +129,7 @@ int main()
   ip->iph_ihl = 5;
   ip->iph_ttl = 20;
   ip->iph_sourceip.s_addr = inet_addr("1.2.3.4");
-  ip->iph_destip.s_addr = inet_addr("8.8.8.8");
+  ip->iph_destip.s_addr = inet_addr("172.17.0.1");
   ip->iph_protocol = IPPROTO_ICMP;
   ip->iph_len = htons(sizeof(struct ipheader) +
                       sizeof(struct icmpheader));

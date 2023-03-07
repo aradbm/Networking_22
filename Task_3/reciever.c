@@ -121,7 +121,7 @@ int main()
         while ((bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0)) > 0)
         {
             amountRec += bytesReceived;
-            // printf("%d\n", amountRec);
+            printf("%d\n", amountRec);
             if (amountRec >= FILE_SIZE / 2)
                 break;
             bzero(buffer, BUFFER_SIZE);
@@ -180,7 +180,7 @@ int main()
         while ((bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0)) > 0)
         {
             amountRec += bytesReceived;
-            // printf("%d\n", amountRec);
+            printf("%d\n", amountRec);
             if (amountRec >= FILE_SIZE / 2)
                 break;
             bzero(buffer, BUFFER_SIZE);
@@ -212,7 +212,7 @@ int main()
             else
             {
                 countFileSent++;
-                puts("*************************continue***************************\n");
+                puts("*************************continue***************************");
                 goto restart;
             }
         }
